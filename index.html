@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Ollama Chat</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f3f4f6;
+            color: #1f2937;
+        }
+
+        .app {
+            width: min(900px, 100%);
+            height: 100vh;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            background: #ffffff;
+            border-left: 1px solid #e5e7eb;
+            border-right: 1px solid #e5e7eb;
+        }
+
+        .header {
+            padding: 15px 20px;
+            background: #111827;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 20px;
+            flex: 1;
+        }
+
+        .header input {
+            width: 180px;
+            padding: 8px 10px;
+            border: 1px solid #4b5563;
+            border-radius: 6px;
+            background: #1f2937;
+            color: white;
+            outline: none;
+        }
+
+        .header button {
+            padding: 8px 12px;
+            border: 0;
+            border-radius: 6px;
+            cursor: pointer;
+            background: #ef4444;
+            color: white;
+        }
+
+        .status {
+            padding: 8px 20px;
+            font-size: 13px;
+            border-bottom: 1px solid #e5e7eb;
+            background: #f9fafb;
+        }
+
+        .status.online {
+            color: #15803d;
+        }
+
+        .status.offline {
+            color: #dc2626;
+        }
+
+        .chat-box {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;    background: white;
+        }
+
+        .message {
+            display: flex;
+            margin-bottom: 16px;
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message.assistant {
+            justify-content: flex-start;
+        }
+
+        .bubble {
+            max-width: 80%;
+            padding: 12px 15px;
+            border-radius: 12px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+
+        .user .bubble {
+            background: #2563eb;
+            color: white;
+            border-bottom-right-radius: 3px;
+        }
+
+        .assistant .bubble {
+            background: #e5e7eb;
+            color: #111827;
+            border-bottom-left-radius: 3px;
+        }
+
+        .input-area {
+            padding: 15px;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            gap: 10px;
+            background: white;
+        }
+
+        textarea {
+            flex: 1;
+            min-height: 50px;
+            max-height: 150px;
+            resize: vertical;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 15px;
+            outline: none;
+        }
+
+        textarea:focus {
+            border-color: #2563eb;
+        }
+		
+		.system-prompt-area {
+    padding: 8px 15px;
+    border-bottom: 1px solid #e5e7eb;
+    background: #f9fafb;
+}
+
+.system-prompt-toggle {
+    padding: 7px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    background: white;
+    cursor: pointer;
+}
+
+.system-prompt-panel {
+    display: none;
+    gap: 8px;
+    margin-top: 8px;
+    align-items: flex-start;
+}
+
+.system-prompt-panel.active {
+    display: flex;
+}
+
+.system-prompt-panel textarea {
+    flex: 1;
+    min-height: 80px;
+    resize: vertical;
+    padding: 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+}
+
+.system-prompt-panel button {
+    padding: 9px 12px;
+    border: 0;
+    border-radius: 6px;
+    cursor: pointer;
+}
+		
+		.message-compose {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.image-preview-list {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+}
+
+.image-preview-item {
+    position: relative;
+    flex: 0 0 auto;
+    width: 80px;
+    height: 80px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #f3f4f6;
+}
+
+.image-preview-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.remove-image-button {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.75);
+    color: white;
+    cursor: pointer;
+}
+
+.select-image-button {
+    width: 48px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background: white;
+    cursor: pointer;
+    font-size: 20px;
+}
+
+.select-image-button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.message-images {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.message-images img {
+    width: 160px;
+    max-width: 100%;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+        .send-button {
+            width: 90px;
+            border: 0;
+            border-radius: 8px;
+            background: #2563eb;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .send-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+		.app {
+    width: min(1200px, 100%);
+    height: 100vh;
+    margin: 0 auto;
+    display: flex;
+    background: #ffffff;
+    border-left: 1px solid #e5e7eb;
+    border-right: 1px solid #e5e7eb;
+}
+
+.sidebar {
+    width: 260px;
+    display: flex;
+    flex-direction: column;
+    padding: 12px;
+    background: #111827;
+    border-right: 1px solid #374151;
+}
+
+.new-chat-button {
+    width: 100%;
+    padding: 11px;
+    border: 0;
+    border-radius: 8px;
+    background: #2563eb;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    margin-bottom: 12px;
+}
+
+.chat-list {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.chat-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px;
+    margin-bottom: 6px;
+    border-radius: 8px;
+    cursor: pointer;
+    background: #1f2937;
+    color: white;
+}
+
+.chat-item.active {
+    background: #374151;
+}
+
+.chat-item-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.chat-item-title {
+    font-size: 14px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.chat-item-model {
+    margin-top: 3px;
+    font-size: 11px;
+    color: #9ca3af;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.delete-chat-button {
+    width: 28px;
+    height: 28px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: #fca5a5;
+    cursor: pointer;
+}
+
+.delete-chat-button:hover {
+    background: #7f1d1d;
+}
+
+.main-chat {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+@media (max-width: 700px) {
+    .sidebar {
+        width: 180px;
+    }
+
+    .header {
+        flex-wrap: wrap;
+    }
+}
+
+
+.app {
+    width: min(1200px, 100%);
+    height: 100vh;
+    margin: 0 auto;
+    display: flex;
+    background: #ffffff;
+    border-left: 1px solid #e5e7eb;
+    border-right: 1px solid #e5e7eb;
+}
+
+.main-chat {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-tabs-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px;
+    background: #111827;
+    border-bottom: 1px solid #374151;
+}
+
+.chat-list {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-behavior: smooth;
+    scrollbar-width: thin;
+    scrollbar-color: #4b5563 #111827;
+}
+
+.chat-list::-webkit-scrollbar {
+    height: 6px;
+}
+
+.chat-list::-webkit-scrollbar-track {
+    background: #111827;
+}
+
+.chat-list::-webkit-scrollbar-thumb {
+    background: #4b5563;
+    border-radius: 999px;
+}
+
+.chat-item {
+    flex: 0 0 auto;
+    width: 210px;
+    min-width: 150px;
+    max-width: 240px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 9px;
+    border: 1px solid #374151;
+    border-radius: 8px;
+    background: #1f2937;
+    color: white;
+    cursor: pointer;
+    transition:
+        background 0.15s ease,
+        border-color 0.15s ease;
+}
+
+.chat-item:hover {
+    background: #273449;
+}
+
+.chat-item.active {
+    background: #374151;
+    border-color: #60a5fa;
+}
+
+.chat-item-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.chat-item-title {
+    font-size: 13px;
+    font-weight: 600;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.chat-item-model {
+    margin-top: 3px;
+    font-size: 11px;
+    color: #9ca3af;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.delete-chat-button {
+    flex: 0 0 auto;
+    width: 25px;
+    height: 25px;
+    padding: 0;
+    border: 0;
+    border-radius: 5px;
+    background: transparent;
+    color: #fca5a5;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.delete-chat-button:hover {
+    background: #7f1d1d;
+    color: white;
+}
+
+.new-chat-button,
+.tab-scroll-button {
+    flex: 0 0 auto;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 1px solid #374151;
+    border-radius: 7px;
+    color: white;
+    cursor: pointer;
+}
+
+.new-chat-button {
+    background: #2563eb;
+    font-size: 22px;
+}
+
+.new-chat-button:hover {
+    background: #1d4ed8;
+}
+
+.tab-scroll-button {
+    background: #1f2937;
+    font-size: 24px;
+    line-height: 1;
+}
+
+.tab-scroll-button:hover {
+    background: #374151;
+}
+
+.tab-scroll-button:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+@media (max-width: 700px) {
+    .chat-item {
+        width: 170px;
+    }
+
+    .chat-tabs-wrapper {
+        padding: 6px;
+    }
+
+    .header {
+        flex-wrap: wrap;
+    }
+}
+
+		
+		
+		.header select {
+    width: 220px;
+    padding: 8px 10px;
+    border: 1px solid #4b5563;
+    border-radius: 6px;
+    background: #1f2937;
+    color: white;
+    outline: none;
+}
+
+        @media (max-width: 600px) {
+            .header {
+                flex-wrap: wrap;
+            }
+
+            .header input {
+                width: 100%;
+                order: 3;
+            }
+
+            .bubble {
+                max-width: 90%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="app">
+    <main class="main-chat">
+        <div class="chat-tabs-wrapper">
+            <button
+                type="button"
+                id="scrollLeftButton"
+                class="tab-scroll-button"
+                title="Cuộn sang trái"
+            >
+                ‹
+            </button>
+
+            <button
+                type="button"
+                id="newChatButton"
+                class="new-chat-button"
+                title="Tạo chat mới"
+            >
+                +
+            </button>
+
+            <div id="chatList" class="chat-list"></div>
+
+            <button
+                type="button"
+                id="scrollRightButton"
+                class="tab-scroll-button"
+                title="Cuộn sang phải"
+            >
+                ›
+            </button>
+        </div>
+
+        <div class="header">
+            <h1 id="chatTitle">Ollama Chat</h1>
+
+            <select id="model">
+                <option value="">Đang tải models...</option>
+            </select>
+
+            <select id="responseMode">
+                <option value="fast">Nhanh</option>
+                <option value="normal" selected>Bình thường</option>
+                <option value="detail">Chi tiết</option>
+            </select>
+
+            <select id="historyLimit">
+                <option value="2">2 messages</option>
+                <option value="4">4 messages</option>
+                <option value="8" selected>8 messages</option>
+                <option value="16">16 messages</option>
+                <option value="0">Toàn bộ</option>
+            </select>
+
+            <button type="button" id="clearButton">
+                Xóa nội dung
+            </button>
+        </div>
+
+        <div id="status" class="status">
+            Đang kiểm tra Ollama...
+        </div>
+		
+<div class="system-prompt-area">
+    <button
+        type="button"
+        id="toggleSystemPromptButton"
+        class="system-prompt-toggle"
+    >
+        ⚙ System Prompt
+    </button>
+
+    <div id="systemPromptPanel" class="system-prompt-panel">
+        <textarea
+            id="systemPromptInput"
+            placeholder="Nhập system prompt..."
+        ></textarea>
+
+        <button
+            type="button"
+            id="saveSystemPromptButton"
+        >
+            Lưu prompt
+        </button>
+
+        <button
+            type="button"
+            id="resetSystemPromptButton"
+        >
+            Mặc định
+        </button>
+    </div>
+</div>
+
+        <div id="chatBox" class="chat-box"></div>
+
+<div class="input-area">
+    <div class="message-compose">
+        <div id="imagePreviewList" class="image-preview-list"></div>
+
+        <textarea
+            id="messageInput"
+            placeholder="Nhập tin nhắn..."
+        ></textarea>
+    </div>
+
+    <input
+        type="file"
+        id="imageInput"
+        accept="image/jpeg,image/png,image/webp"
+        multiple
+        hidden
+    >
+
+    <button
+        type="button"
+        id="selectImageButton"
+        class="select-image-button"
+    >
+        📎
+    </button>
+
+    <button
+        type="button"
+        id="sendButton"
+        class="send-button"
+    >
+        Gửi
+    </button>
+</div>
+
+    </main>
+</div>
+
+<script>
+
+</script>
+
+
+    <script src="script.js"></script>
+	
+</body>
+</html>
