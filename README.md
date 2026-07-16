@@ -2,7 +2,8 @@
 
 Example website access ollama local  
 
-<img width="838" height="534" alt="image" src="https://github.com/user-attachments/assets/6560dced-37e4-47f7-8820-eafa42e6383f" />
+<img width="1036" height="696" alt="image" src="https://github.com/user-attachments/assets/9597d271-e17b-4db6-b122-18b11de855fd" />
+
 
 Feature
 - chat
