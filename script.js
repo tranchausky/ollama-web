@@ -116,6 +116,7 @@ const translations = {
 
 let currentLanguage = localStorage.getItem(LANGUAGE_STORAGE_KEY) || 'en';
 let defaultSystemPrompt = getDefaultSystemPrompt(currentLanguage);
+let ollamaUrl = localStorage.getItem('ollama_url') || 'http://localhost:11434';
 
 let chats = [];
 let activeChatId = null;
@@ -301,6 +302,12 @@ const helpButton = document.getElementById('helpButton');
 const helpModal = document.getElementById('helpModal');
 const closeHelpModalButton = document.getElementById('closeHelpModal');
 const helpModalBody = document.getElementById('helpModalBody');
+const ollamaSettingsButton = document.getElementById('ollamaSettingsButton');
+const ollamaSettingsModal = document.getElementById('ollamaSettingsModal');
+const closeOllamaSettingsButton = document.getElementById('closeOllamaSettingsButton');
+const ollamaUrlInput = document.getElementById('ollamaUrlInput');
+const saveOllamaUrlButton = document.getElementById('saveOllamaUrlButton');
+const cancelOllamaUrlButton = document.getElementById('cancelOllamaUrlButton');
 
 const imageInput =
     document.getElementById('imageInput');
@@ -308,6 +315,45 @@ const imageInput =
 languageSelect.addEventListener('change', function () {
     setLanguage(languageSelect.value);
 });
+
+function openOllamaSettings() {
+    if (!ollamaSettingsModal || !ollamaUrlInput) {
+        return;
+    }
+
+    ollamaUrlInput.value = ollamaUrl;
+    ollamaSettingsModal.classList.add('open');
+    ollamaSettingsModal.setAttribute('aria-hidden', 'false');
+    ollamaUrlInput.focus();
+}
+
+function closeOllamaSettings() {
+    if (!ollamaSettingsModal) {
+        return;
+    }
+
+    ollamaSettingsModal.classList.remove('open');
+    ollamaSettingsModal.setAttribute('aria-hidden', 'true');
+}
+
+function saveOllamaSettings() {
+    const value = (ollamaUrlInput?.value || '').trim();
+
+    if (!value) {
+        alert('Please enter an Ollama URL.');
+        return;
+    }
+
+    ollamaUrl = value.replace(/\/$/, '');
+    localStorage.setItem('ollama_url', ollamaUrl);
+    closeOllamaSettings();
+    statusElement.textContent = 'Ollama URL updated. Reconnecting...';
+    statusElement.className = 'status offline';
+
+    if (typeof initChatApp === 'function') {
+        initChatApp();
+    }
+}
 
 function setHeaderExpanded(expanded) {
     if (!headerBar) {
@@ -352,6 +398,30 @@ if (toggleHeaderButton) {
 
         const shouldExpand = !headerBar.classList.contains('is-open');
         setHeaderExpanded(shouldExpand);
+    });
+}
+
+if (ollamaSettingsButton) {
+    ollamaSettingsButton.addEventListener('click', openOllamaSettings);
+}
+
+if (closeOllamaSettingsButton) {
+    closeOllamaSettingsButton.addEventListener('click', closeOllamaSettings);
+}
+
+if (cancelOllamaUrlButton) {
+    cancelOllamaUrlButton.addEventListener('click', closeOllamaSettings);
+}
+
+if (saveOllamaUrlButton) {
+    saveOllamaUrlButton.addEventListener('click', saveOllamaSettings);
+}
+
+if (ollamaSettingsModal) {
+    ollamaSettingsModal.addEventListener('click', function (event) {
+        if (event.target === ollamaSettingsModal) {
+            closeOllamaSettings();
+        }
     });
 }
 
@@ -458,7 +528,7 @@ async function checkModelVisionCapability(modelName) {
     }
 
     try {
-        const response = await fetch(`${OLLAMA_URL}/api/show`, {
+        const response = await fetch(`${ollamaUrl}/api/show`, {
             method: 'POST',
 
             headers: {
@@ -1628,7 +1698,7 @@ async function sendMessage() {
 
     try {
         const response = await fetch(
-            `${OLLAMA_URL}/api/chat`,
+            `${ollamaUrl}/api/chat`,
             {
                 method: 'POST',
 
@@ -1950,7 +2020,7 @@ async function loadModels() {
     `;
 
     try {
-        const response = await fetch(`${OLLAMA_URL}/api/tags`);
+        const response = await fetch(`${ollamaUrl}/api/tags`);
 
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}`);
