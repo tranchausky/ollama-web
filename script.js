@@ -4,20 +4,268 @@
 
 
 const STORAGE_KEY = 'ollama_chat_sessions';
+const LANGUAGE_STORAGE_KEY = 'ollama_chat_language';
+const ACTIVE_CHAT_STORAGE_KEY = 'ollama_active_chat_id';
+
+const translations = {
+    en: {
+        appTitle: 'Ollama Chat',
+        newChat: 'New chat',
+        newChatTooltip: 'Create a new chat',
+        scrollLeft: 'Scroll left',
+        scrollRight: 'Scroll right',
+        clearContent: 'Clear content',
+        systemPrompt: 'System Prompt',
+        savePrompt: 'Save prompt',
+        resetDefault: 'Default',
+        send: 'Send',
+        loadingResponse: 'Thinking...',
+        loadingModels: 'Loading models...',
+        noModels: 'No models available',
+        ollamaStatusChecking: 'Checking Ollama...',
+        ollamaStatusOnline: 'Ollama is running · {count} models installed',
+        ollamaStatusOffline: 'Could not connect to Ollama at localhost:11434',
+        ollamaStatusNoModels: 'Ollama is running but no model is installed',
+        messagePlaceholder: 'Type a message...',
+        systemPromptPlaceholder: 'Enter system prompt...',
+        attachImage: 'Attach image',
+        welcomeMessage: 'Hello! Type a message to get started.',
+        responseModeFast: 'Fast',
+        responseModeNormal: 'Normal',
+        responseModeDetail: 'Detailed',
+        historyLimit2: '2 messages',
+        historyLimit4: '4 messages',
+        historyLimit8: '8 messages',
+        historyLimit16: '16 messages',
+        historyLimit0: 'All',
+        defaultSystemPrompt: 'You are a friendly AI assistant. Answer in English.',
+        emptyMessagePrompt: 'Analyze this image.',
+        selectModel: 'Please select a model.',
+        noCurrentChat: 'Could not find the current chat.',
+        modelNoVision: 'The selected model does not support images. Please choose a vision model.',
+        modelNoVisionShort: 'The selected model does not support images.',
+        noContent: 'The model returned no content.',
+        errorConnection: 'Could not connect to Ollama. Please make sure Ollama is running and CORS is enabled.',
+        errorContext: 'The history or images are too large for the model context. Please reduce the history or number of images.',
+        errorMemory: 'There is not enough RAM or VRAM to run the model. Please use a smaller model or reduce the image size.',
+        confirmDeleteChat: 'Are you sure you want to delete this chat?',
+        confirmClearChat: 'Are you sure you want to clear this chat?',
+        cannotDeleteWhileGenerating: 'Cannot delete chat while the model is responding.',
+        cannotSwitchWhileGenerating: 'The model is responding. Please wait before switching chats.',
+        saveSystemPromptSuccess: 'System prompt saved',
+        saveSystemPromptError: 'Could not save the system prompt.',
+        statusUsingModel: 'Using model: {model}',
+        statusError: 'An error occurred while calling Ollama',
+        statusImageUnsupported: 'The selected model does not support images.',
+        expandHeader: 'Show controls',
+        collapseHeader: 'Hide controls'
+    },
+    vi: {
+        appTitle: 'Ollama Chat',
+        newChat: 'Chat mới',
+        newChatTooltip: 'Tạo chat mới',
+        scrollLeft: 'Cuộn sang trái',
+        scrollRight: 'Cuộn sang phải',
+        clearContent: 'Xóa nội dung',
+        systemPrompt: 'System Prompt',
+        savePrompt: 'Lưu prompt',
+        resetDefault: 'Mặc định',
+        send: 'Gửi',
+        loadingResponse: 'Đang suy nghĩ...',
+        loadingModels: 'Đang tải models...',
+        noModels: 'Chưa có model nào',
+        ollamaStatusChecking: 'Đang kiểm tra Ollama...',
+        ollamaStatusOnline: 'Ollama đang hoạt động · {count} model đã cài',
+        ollamaStatusOffline: 'Không kết nối được Ollama tại localhost:11434',
+        ollamaStatusNoModels: 'Ollama đang chạy nhưng chưa cài model',
+        messagePlaceholder: 'Nhập tin nhắn...',
+        systemPromptPlaceholder: 'Nhập system prompt...',
+        attachImage: 'Đính kèm ảnh',
+        welcomeMessage: 'Xin chào! Hãy nhập tin nhắn để bắt đầu.',
+        responseModeFast: 'Nhanh',
+        responseModeNormal: 'Bình thường',
+        responseModeDetail: 'Chi tiết',
+        historyLimit2: '2 messages',
+        historyLimit4: '4 messages',
+        historyLimit8: '8 messages',
+        historyLimit16: '16 messages',
+        historyLimit0: 'Toàn bộ',
+        defaultSystemPrompt: 'Bạn là một trợ lý AI thân thiện. Hãy trả lời bằng tiếng Việt.',
+        emptyMessagePrompt: 'Hãy phân tích hình ảnh này.',
+        selectModel: 'Vui lòng chọn model.',
+        noCurrentChat: 'Không tìm thấy cuộc chat hiện tại.',
+        modelNoVision: 'Model đang chọn không hỗ trợ hình ảnh. Hãy chọn model vision.',
+        modelNoVisionShort: 'Model hiện tại không hỗ trợ hình ảnh.',
+        noContent: 'Model không trả về nội dung.',
+        errorConnection: 'Không kết nối được Ollama. Hãy kiểm tra Ollama đang chạy và cấu hình CORS.',
+        errorContext: 'Lịch sử hoặc ảnh quá lớn, vượt quá context của model. Hãy giảm số history hoặc số lượng ảnh.',
+        errorMemory: 'Không đủ RAM hoặc VRAM để chạy model. Hãy dùng model nhỏ hơn hoặc giảm kích thước ảnh.',
+        confirmDeleteChat: 'Bạn có chắc muốn xóa chat này không?',
+        confirmClearChat: 'Bạn có chắc muốn xóa toàn bộ nội dung chat này không?',
+        cannotDeleteWhileGenerating: 'Không thể xóa chat khi model đang trả lời.',
+        cannotSwitchWhileGenerating: 'Model đang trả lời. Hãy chờ hoàn tất trước khi đổi chat.',
+        saveSystemPromptSuccess: 'Đã lưu System Prompt',
+        saveSystemPromptError: 'Không lưu được System Prompt.',
+        statusUsingModel: 'Đang dùng model: {model}',
+        statusError: 'Có lỗi khi gọi Ollama',
+        statusImageUnsupported: 'Model hiện tại không hỗ trợ hình ảnh.',
+        expandHeader: 'Mở cài đặt',
+        collapseHeader: 'Đóng cài đặt'
+    }
+};
+
+let currentLanguage = localStorage.getItem(LANGUAGE_STORAGE_KEY) || 'en';
+let defaultSystemPrompt = getDefaultSystemPrompt(currentLanguage);
+
+let chats = [];
+let activeChatId = null;
+
+function saveActiveChatId() {
+    if (activeChatId) {
+        localStorage.setItem(ACTIVE_CHAT_STORAGE_KEY, activeChatId);
+    } else {
+        localStorage.removeItem(ACTIVE_CHAT_STORAGE_KEY);
+    }
+}
+
+function restoreActiveChatId(availableChats) {
+    const savedChatId = localStorage.getItem(ACTIVE_CHAT_STORAGE_KEY);
+
+    if (savedChatId && availableChats.some(function (chat) {
+        return chat.id === savedChatId;
+    })) {
+        return savedChatId;
+    }
+
+    return availableChats[0]?.id || null;
+}
+
+function getDefaultSystemPrompt(lang = currentLanguage) {
+    return translations[lang]?.defaultSystemPrompt || translations.en.defaultSystemPrompt;
+}
+
+function getActiveDefaultSystemPrompt() {
+    return getDefaultSystemPrompt(currentLanguage);
+}
 
 const SYSTEM_MESSAGE = {
     role: 'system',
-    content: 'Bạn là một trợ lý AI thân thiện. Hãy trả lời bằng tiếng Việt.'
+    content: getActiveDefaultSystemPrompt()
 };
 
-const DEFAULT_SYSTEM_PROMPT =
-    'Bạn là một trợ lý AI thân thiện. Hãy trả lời bằng tiếng Việt.';
+const DEFAULT_SYSTEM_PROMPT = getActiveDefaultSystemPrompt();
 
-function createSystemMessage(content = DEFAULT_SYSTEM_PROMPT) {
+function createSystemMessage(content = getActiveDefaultSystemPrompt()) {
     return {
         role: 'system',
         content: content
     };
+}
+
+function t(key) {
+    return translations[currentLanguage]?.[key] || translations.en[key] || key;
+}
+
+function setLanguage(lang) {
+    const normalizedLang = translations[lang] ? lang : 'en';
+    currentLanguage = normalizedLang;
+    defaultSystemPrompt = getDefaultSystemPrompt(normalizedLang);
+    localStorage.setItem(LANGUAGE_STORAGE_KEY, normalizedLang);
+
+    if (languageSelect) {
+        languageSelect.value = normalizedLang;
+    }
+
+    applyLanguage();
+}
+
+function applyLanguage() {
+    document.documentElement.lang = currentLanguage;
+
+    if (languageSelect) {
+        languageSelect.value = currentLanguage;
+    }
+
+    if (toggleSystemPromptButton) {
+        toggleSystemPromptButton.textContent = `⚙ ${t('systemPrompt')}`;
+    }
+
+    if (saveSystemPromptButton) {
+        saveSystemPromptButton.textContent = t('savePrompt');
+    }
+
+    if (resetSystemPromptButton) {
+        resetSystemPromptButton.textContent = t('resetDefault');
+    }
+
+    if (clearButton) {
+        clearButton.textContent = t('clearContent');
+    }
+
+    if (sendButton) {
+        sendButton.textContent = t('send');
+    }
+
+    if (messageInput) {
+        messageInput.placeholder = t('messagePlaceholder');
+    }
+
+    if (systemPromptInput) {
+        systemPromptInput.placeholder = t('systemPromptPlaceholder');
+    }
+
+    if (newChatButton) {
+        newChatButton.title = t('newChatTooltip');
+    }
+
+    if (scrollLeftButton) {
+        scrollLeftButton.title = t('scrollLeft');
+    }
+
+    if (scrollRightButton) {
+        scrollRightButton.title = t('scrollRight');
+    }
+
+    if (selectImageButton) {
+        selectImageButton.title = t('attachImage');
+    }
+
+    if (responseModeInput && responseModeInput.options) {
+        responseModeInput.options[0].textContent = t('responseModeFast');
+        responseModeInput.options[1].textContent = t('responseModeNormal');
+        responseModeInput.options[2].textContent = t('responseModeDetail');
+    }
+
+    if (historyLimitInput && historyLimitInput.options) {
+        historyLimitInput.options[0].textContent = t('historyLimit2');
+        historyLimitInput.options[1].textContent = t('historyLimit4');
+        historyLimitInput.options[2].textContent = t('historyLimit8');
+        historyLimitInput.options[3].textContent = t('historyLimit16');
+        historyLimitInput.options[4].textContent = t('historyLimit0');
+    }
+
+    if (systemPromptInput) {
+        const currentPrompt = systemPromptInput.value.trim();
+        const defaultPrompts = [
+            getDefaultSystemPrompt('en'),
+            getDefaultSystemPrompt('vi')
+        ];
+
+        if (!currentPrompt || defaultPrompts.includes(currentPrompt)) {
+            systemPromptInput.value = defaultSystemPrompt;
+        }
+    }
+
+    if (chatTitle) {
+        const activeChat = getActiveChat();
+        chatTitle.textContent = activeChat?.title || t('appTitle');
+    }
+
+    if (toggleHeaderButton) {
+        toggleHeaderButton.title = headerBar?.classList.contains('is-open')
+            ? t('collapseHeader')
+            : t('expandHeader');
+    }
 }
 
 const toggleSystemPromptButton =
@@ -46,10 +294,129 @@ const modelInput = document.getElementById('model');
 const responseModeInput = document.getElementById('responseMode');
 const statusElement = document.getElementById('status');
 const historyLimitInput = document.getElementById('historyLimit');
-
+const languageSelect = document.getElementById('languageSelect');
+const headerBar = document.getElementById('headerBar');
+const toggleHeaderButton = document.getElementById('toggleHeaderButton');
+const helpButton = document.getElementById('helpButton');
+const helpModal = document.getElementById('helpModal');
+const closeHelpModalButton = document.getElementById('closeHelpModal');
+const helpModalBody = document.getElementById('helpModalBody');
 
 const imageInput =
     document.getElementById('imageInput');
+
+languageSelect.addEventListener('change', function () {
+    setLanguage(languageSelect.value);
+});
+
+function setHeaderExpanded(expanded) {
+    if (!headerBar) {
+        return;
+    }
+
+    headerBar.classList.toggle('is-open', expanded);
+    headerBar.classList.toggle('is-collapsed', !expanded);
+
+    if (toggleHeaderButton) {
+        toggleHeaderButton.setAttribute(
+            'aria-expanded',
+            expanded ? 'true' : 'false'
+        );
+        toggleHeaderButton.title = expanded
+            ? t('collapseHeader')
+            : t('expandHeader');
+        toggleHeaderButton.textContent = expanded ? '✕' : '☰';
+    }
+}
+
+function syncHeaderState() {
+    if (!headerBar) {
+        return;
+    }
+
+    const isMobile = window.innerWidth <= 700;
+
+    if (!isMobile) {
+        setHeaderExpanded(true);
+        return;
+    }
+
+    setHeaderExpanded(false);
+}
+
+if (toggleHeaderButton) {
+    toggleHeaderButton.addEventListener('click', function () {
+        if (!headerBar) {
+            return;
+        }
+
+        const shouldExpand = !headerBar.classList.contains('is-open');
+        setHeaderExpanded(shouldExpand);
+    });
+}
+
+window.addEventListener('resize', syncHeaderState);
+syncHeaderState();
+
+async function openHelpModal() {
+    if (!helpModal || !helpModalBody) {
+        return;
+    }
+
+    helpModalBody.innerHTML = 'Loading...';
+    helpModal.classList.add('open');
+    helpModal.setAttribute('aria-hidden', 'false');
+
+    try {
+        const response = await fetch('./README.md');
+
+        if (!response.ok) {
+            throw new Error('Unable to load README');
+        }
+
+        const text = await response.text();
+        const escaped = text
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+
+        helpModalBody.innerHTML = `<pre>${escaped}</pre>`;
+    } catch (error) {
+        helpModalBody.innerHTML = `<p>Could not load help content.</p>`;
+        console.error(error);
+    }
+}
+
+function closeHelpModal() {
+    if (!helpModal) {
+        return;
+    }
+
+    helpModal.classList.remove('open');
+    helpModal.setAttribute('aria-hidden', 'true');
+}
+
+if (helpButton) {
+    helpButton.addEventListener('click', openHelpModal);
+}
+
+if (closeHelpModalButton) {
+    closeHelpModalButton.addEventListener('click', closeHelpModal);
+}
+
+if (helpModal) {
+    helpModal.addEventListener('click', function (event) {
+        if (event.target === helpModal) {
+            closeHelpModal();
+        }
+    });
+}
+
+document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape' && helpModal && helpModal.classList.contains('open')) {
+        closeHelpModal();
+    }
+});
 
 const selectImageButton =
     document.getElementById('selectImageButton');
@@ -137,8 +504,8 @@ function updateImageInputState() {
 
     selectImageButton.title =
         currentModelSupportsVision
-            ? 'Đính kèm ảnh'
-            : 'Model này không hỗ trợ ảnh';
+            ? t('attachImage')
+            : t('modelNoVisionShort');
 
     if (!currentModelSupportsVision) {
         clearSelectedImages();
@@ -240,7 +607,7 @@ async function resizeImageFile(
 }
 selectImageButton.addEventListener('click', function () {
     if (!currentModelSupportsVision) {
-        alert('Model hiện tại không hỗ trợ hình ảnh.');
+        alert(t('modelNoVisionShort'));
         return;
     }
 
@@ -339,7 +706,7 @@ function createNewChat() {
 
     const chat = {
         id: generateId(),
-        title: 'Chat mới',
+        title: t('newChat'),
         model: selectedModel,
         messages: [
             { ...SYSTEM_MESSAGE }
@@ -612,14 +979,27 @@ async function clearAllChatsFromDatabase() {
 }
 
 function scrollToBottom(force = false) {
-    const distanceFromBottom =
-        chatBox.scrollHeight -
-        chatBox.scrollTop -
-        chatBox.clientHeight;
-
-    if (force || distanceFromBottom < 150) {
-        chatBox.scrollTop = chatBox.scrollHeight;
+    if (!chatBox) {
+        return;
     }
+
+    if (isGenerating && !force) {
+        return;
+    }
+
+    const doScroll = function () {
+        const distanceFromBottom =
+            chatBox.scrollHeight -
+            chatBox.scrollTop -
+            chatBox.clientHeight;
+
+        if (force || distanceFromBottom < 220) {
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+    };
+
+    requestAnimationFrame(doScroll);
+    window.setTimeout(doScroll, 0);
 }
 
 async function createNewChat() {
@@ -627,15 +1007,15 @@ async function createNewChat() {
 
     const chat = {
         id: generateId(),
-        title: 'Chat mới',
+        title: t('newChat'),
         model: selectedModel,
         historyLimit: '8',
         responseMode: 'normal',
 
-        systemPrompt: DEFAULT_SYSTEM_PROMPT,
+        systemPrompt: defaultSystemPrompt,
 
         messages: [
-            createSystemMessage(DEFAULT_SYSTEM_PROMPT)
+            createSystemMessage(defaultSystemPrompt)
         ],
 
         createdAt: new Date().toISOString(),
@@ -644,6 +1024,7 @@ async function createNewChat() {
 
     chats.unshift(chat);
     activeChatId = chat.id;
+    saveActiveChatId();
 
     try {
         await saveChat(chat);
@@ -660,7 +1041,7 @@ async function createNewChat() {
 
 function getChatSystemPrompt(chat) {
     if (!chat) {
-        return DEFAULT_SYSTEM_PROMPT;
+        return defaultSystemPrompt;
     }
 
     if (
@@ -675,12 +1056,12 @@ function getChatSystemPrompt(chat) {
     });
 
     return systemMessage?.content?.trim() ||
-        DEFAULT_SYSTEM_PROMPT;
+        defaultSystemPrompt;
 }
 
 function updateChatSystemPrompt(chat, prompt) {
     const normalizedPrompt =
-        prompt.trim() || DEFAULT_SYSTEM_PROMPT;
+        prompt.trim() || defaultSystemPrompt;
 
     chat.systemPrompt = normalizedPrompt;
 
@@ -714,11 +1095,12 @@ function getActiveChat() {
 
 function switchChat(chatId) {
     if (isGenerating) {
-        alert('Model đang trả lời. Hãy chờ hoàn tất trước khi đổi chat.');
+        alert(t('cannotSwitchWhileGenerating'));
         return;
     }
 
     activeChatId = chatId;
+    saveActiveChatId();
 
     renderChatList(true);
     renderActiveChat();
@@ -726,7 +1108,7 @@ function switchChat(chatId) {
 
 async function deleteChat(chatId) {
     if (isGenerating && activeChatId === chatId) {
-        alert('Không thể xóa chat khi model đang trả lời.');
+        alert(t('cannotDeleteWhileGenerating'));
         return;
     }
 
@@ -739,7 +1121,7 @@ async function deleteChat(chatId) {
     }
 
     const confirmed = confirm(
-        `Bạn có chắc muốn xóa "${chat.title}" không?`
+        `${t('confirmDeleteChat')}\n"${chat.title}"`
     );
 
     if (!confirmed) {
@@ -762,6 +1144,8 @@ async function deleteChat(chatId) {
         activeChatId = chats[0]?.id || null;
     }
 
+    saveActiveChatId();
+
     if (chats.length === 0) {
         await createNewChat();
         return;
@@ -779,9 +1163,7 @@ async function clearActiveChat() {
         return;
     }
 
-    const confirmed = confirm(
-        'Bạn có chắc muốn xóa toàn bộ nội dung chat này không?'
-    );
+    const confirmed = confirm(t('confirmClearChat'));
 
     if (!confirmed) {
         return;
@@ -791,7 +1173,7 @@ async function clearActiveChat() {
     // Nếu input rỗng thì lấy prompt hiện tại của chat.
     const currentSystemPrompt =
 		systemPromptInput.value.trim() ||
-		DEFAULT_SYSTEM_PROMPT;
+		defaultSystemPrompt;
 
 	updateChatSystemPrompt(
 		chat,
@@ -802,7 +1184,7 @@ async function clearActiveChat() {
 		createSystemMessage(currentSystemPrompt)
 	];
 
-    chat.title = 'Chat mới';
+    chat.title = t('newChat');
     chat.updatedAt = new Date().toISOString();
 
     try {
@@ -833,7 +1215,7 @@ function updateChatTitle(chat) {
     });
 
     if (!firstUserMessage) {
-        chat.title = 'Chat mới';
+        chat.title = t('newChat');
         return;
     }
 
@@ -860,12 +1242,12 @@ function renderChatList(shouldScrollActive = false) {
 
         const title = document.createElement('div');
         title.className = 'chat-item-title';
-        title.textContent = chat.title || 'Chat mới';
+        title.textContent = chat.title || t('newChat');
 
         const model = document.createElement('div');
         model.className = 'chat-item-model';
         model.textContent =
-            chat.model || 'Chưa chọn model';
+            chat.model || t('noModels');
 
         const deleteButton =
             document.createElement('button');
@@ -875,7 +1257,7 @@ function renderChatList(shouldScrollActive = false) {
             'delete-chat-button';
 
         deleteButton.textContent = '×';
-        deleteButton.title = 'Xóa chat';
+        deleteButton.title = t('confirmDeleteChat');
 
         content.appendChild(title);
         content.appendChild(model);
@@ -917,7 +1299,7 @@ function renderActiveChat() {
     chatBox.innerHTML = '';
 
     chatTitle.textContent =
-        chat.title || 'Ollama Chat';
+        chat.title || t('appTitle');
 
     if (chat.model) {
         modelInput.value = chat.model;
@@ -941,7 +1323,7 @@ function renderActiveChat() {
     if (visibleMessages.length === 0) {
         addMessage(
             'assistant',
-            'Xin chào! Hãy nhập tin nhắn để bắt đầu.'
+            t('welcomeMessage')
         );
 
         return;
@@ -982,14 +1364,14 @@ saveSystemPromptButton.addEventListener(
 
             statusElement.className = 'status online';
             statusElement.textContent =
-                'Đã lưu System Prompt';
+                t('saveSystemPromptSuccess');
         } catch (error) {
             console.error(
                 'Không lưu được System Prompt:',
                 error
             );
 
-            alert('Không lưu được System Prompt.');
+            alert(t('saveSystemPromptError'));
         }
     }
 );
@@ -1003,11 +1385,11 @@ resetSystemPromptButton.addEventListener(
         }
 
         systemPromptInput.value =
-            DEFAULT_SYSTEM_PROMPT;
+            defaultSystemPrompt;
 
         updateChatSystemPrompt(
             chat,
-            DEFAULT_SYSTEM_PROMPT
+            defaultSystemPrompt
         );
 
         try {
@@ -1074,10 +1456,6 @@ function addMessage(role, content = '', images = []) {
     return bubbleElement;
 }
 
-function scrollToBottom() {
-    chatBox.scrollTop = chatBox.scrollHeight;
-}
-
 function setLoading(loading) {
     isGenerating = loading;
 
@@ -1087,7 +1465,7 @@ function setLoading(loading) {
     newChatButton.disabled = loading;
 
     sendButton.textContent =
-        loading ? 'Đang trả lời...' : 'Gửi';
+        loading ? t('loadingResponse') : t('send');
 }
 
 function getModelOptions() {
@@ -1148,7 +1526,7 @@ async function sendMessage() {
     }
 
     if (!model) {
-        alert('Vui lòng chọn model.');
+        alert(t('selectModel'));
         return;
     }
 
@@ -1156,10 +1534,7 @@ async function sendMessage() {
         selectedImages.length > 0 &&
         !currentModelSupportsVision
     ) {
-        alert(
-            'Model đang chọn không hỗ trợ hình ảnh. ' +
-            'Hãy chọn model vision.'
-        );
+        alert(t('modelNoVision'));
         return;
     }
 
@@ -1183,7 +1558,7 @@ async function sendMessage() {
 
     const userMessage = {
         role: 'user',
-        content: content || 'Hãy phân tích hình ảnh này.'
+        content: content || t('emptyMessagePrompt')
     };
 
     if (storedImages.length > 0) {
@@ -1235,7 +1610,7 @@ async function sendMessage() {
 
     const assistantBubble = addMessage(
         'assistant',
-        'Đang suy nghĩ...'
+        t('loadingResponse')
     );
 
     const modelConfig = getModelOptions();
@@ -1338,10 +1713,9 @@ async function sendMessage() {
 
                     assistantBubble.textContent =
                         assistantContent ||
-                        'Đang suy nghĩ...';
-					scrollToBottom(true);
+                        t('loadingResponse');
 
-                    scrollToBottom();
+                    scrollToBottom(false);
                 } catch (parseError) {
                     console.warn(
                         'Không parse được dòng stream:',
@@ -1373,13 +1747,12 @@ async function sendMessage() {
         }
 
         if (!assistantContent.trim()) {
-            assistantContent =
-                'Model không trả về nội dung.';
+            assistantContent = t('noContent');
         }
 
         assistantBubble.textContent =
             assistantContent;
-		scrollToBottom(true);
+        scrollToBottom(true);
 
         /*
          * Lưu phản hồi assistant.
@@ -1404,7 +1777,7 @@ async function sendMessage() {
 
         statusElement.className = 'status online';
         statusElement.textContent =
-            `Đang dùng model: ${model}`;
+            t('statusUsingModel').replace('{model}', model);
     } catch (error) {
         console.error('Lỗi gửi chat:', error);
 
@@ -1435,11 +1808,10 @@ async function sendMessage() {
         }
 
         statusElement.className = 'status offline';
-        statusElement.textContent =
-            'Có lỗi khi gọi Ollama';
+        statusElement.textContent = t('statusError');
     } finally {
         setLoading(false);
-        scrollToBottom();
+        scrollToBottom(true);
         messageInput.focus();
     }
 }
@@ -1449,37 +1821,28 @@ function getChatErrorMessage(error) {
         error?.message || String(error);
 
     if (message.includes('Failed to fetch')) {
-        return (
-            'Không kết nối được Ollama. ' +
-            'Hãy kiểm tra Ollama đang chạy và cấu hình CORS.'
-        );
+        return t('errorConnection');
     }
 
     if (
         message.includes('does not support images') ||
         message.includes('does not support vision')
     ) {
-        return 'Model này không hỗ trợ hình ảnh.';
+        return t('statusImageUnsupported');
     }
 
     if (
         message.includes('context length') ||
         message.includes('context window')
     ) {
-        return (
-            'Lịch sử hoặc ảnh quá lớn, vượt quá context của model. ' +
-            'Hãy giảm số history hoặc số lượng ảnh.'
-        );
+        return t('errorContext');
     }
 
     if (
         message.includes('out of memory') ||
         message.includes('memory')
     ) {
-        return (
-            'Không đủ RAM hoặc VRAM để chạy model. ' +
-            'Hãy dùng model nhỏ hơn hoặc giảm kích thước ảnh.'
-        );
+        return t('errorMemory');
     }
 
     return message;
@@ -1583,7 +1946,7 @@ messageInput.addEventListener(
 async function loadModels() {
     modelInput.disabled = true;
     modelInput.innerHTML = `
-        <option value="">Đang tải models...</option>
+        <option value="">${t('loadingModels')}</option>
     `;
 
     try {
@@ -1600,12 +1963,12 @@ async function loadModels() {
 
         if (models.length === 0) {
             modelInput.innerHTML = `
-                <option value="">Chưa có model nào</option>
+                <option value="">${t('noModels')}</option>
             `;
 
             statusElement.className = 'status offline';
             statusElement.textContent =
-                'Ollama đang chạy nhưng chưa cài model';
+                t('ollamaStatusNoModels');
 
             return;
         }
@@ -1626,17 +1989,16 @@ async function loadModels() {
 
         statusElement.className = 'status online';
         statusElement.textContent =
-            `Ollama đang hoạt động · ${models.length} model đã cài`;
+            t('ollamaStatusOnline').replace('{count}', models.length);
     } catch (error) {
         console.error('Không tải được models:', error);
 
         modelInput.innerHTML = `
-            <option value="">Không tải được models</option>
+            <option value="">${t('loadingModels')}</option>
         `;
 
         statusElement.className = 'status offline';
-        statusElement.textContent =
-            'Không kết nối được Ollama tại localhost:11434';
+        statusElement.textContent = t('ollamaStatusOffline');
     } finally {
         modelInput.disabled = false;
     }
@@ -1753,6 +2115,9 @@ chatList.addEventListener(
 
 async function initChatApp() {
     try {
+        applyLanguage();
+        statusElement.textContent = t('ollamaStatusChecking');
+
         await openChatDatabase();
 
         chats = await loadChats();
@@ -1762,7 +2127,8 @@ async function initChatApp() {
         if (chats.length === 0) {
             await createNewChat();
         } else {
-            activeChatId = chats[0].id;
+            activeChatId = restoreActiveChatId(chats);
+            saveActiveChatId();
 
             renderChatList();
             renderActiveChat();
@@ -1773,13 +2139,9 @@ async function initChatApp() {
         console.error('Khởi tạo ứng dụng thất bại:', error);
 
         statusElement.className = 'status offline';
-        statusElement.textContent =
-            'Không thể mở bộ nhớ IndexedDB';
+        statusElement.textContent = t('ollamaStatusOffline');
 
-        alert(
-            'Không thể khởi tạo dữ liệu chat. ' +
-            'Hãy kiểm tra trình duyệt có cho phép IndexedDB không.'
-        );
+        alert('Could not initialize chat storage. Please ensure your browser allows IndexedDB.');
     }
 }
 
