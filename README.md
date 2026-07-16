@@ -1,4 +1,4 @@
-# ollama-web
+# ollama-web-local
 
 Example website access ollama local  
 http://localhost:11434/ (Ollama is running) ollama local   
