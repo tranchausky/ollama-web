@@ -1,7 +1,8 @@
 # ollama-web
 
 Example website access ollama local  
-https://ollama.chaucc.top/   
+http://localhost:11434/ (Ollama is running) ollama local   
+https://ollama.chaucc.top/ -> access ollama local  
 
 
 
@@ -20,9 +21,9 @@ Feature
 
 
 
-Setup for access ollama local
+# Setup for access ollama local
 
-## Public win install ollama app
+## For win 10 install ollama app
 cmd run
 ```
 setx OLLAMA_HOST "0.0.0.0:11434"
